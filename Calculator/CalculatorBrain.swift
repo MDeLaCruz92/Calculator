@@ -18,8 +18,13 @@ import Foundation
 
 struct CalculatorBrain {
     
-    private var accumulator: Double?
-    private var representation: String?
+    private var stack: Array<Element>?    // added
+    
+    private enum Element {                // added
+        case operand(Double)
+        case name(String)
+        case operation(String)
+    }
     
     private enum Operation {
         case constant(Double, String)
@@ -36,7 +41,7 @@ struct CalculatorBrain {
         "cos" : Operation.unaryOperation(cos, {"cos(\($0))"}),
         "tan": Operation.unaryOperation(tan, {"tan(\($0))"}),
         "±" : Operation.unaryOperation({ -$0 }, {"-(\($0))"}),
-        "x2": Operation.unaryOperation({ $0 * $0 }, {"\($0)"}),
+        "x²": Operation.unaryOperation({ $0 * $0 }, {"x²(\($0))"}),
         "×" : Operation.binaryOperation({ $0 * $1 }, {"\( $0 + " × " + $1 )"}),
         "÷" : Operation.binaryOperation({ $0 / $1 }, {"\( $0 + " ÷ " + $1 )"}),
         "+" : Operation.binaryOperation({ $0 + $1 }, {"\( $0 + " + " + $1 )"}),
@@ -59,7 +64,7 @@ struct CalculatorBrain {
                 if accumulator != nil {
                     pendingBinaryOperation = PendingBinaryOperation(function: function, stringFunction: description, firstOperand: accumulator!, stringOperand: representation!)
                     accumulator = nil
-                    representation = " "
+                    representation = ""
                 }
             case .equals:
                 performPendingBinaryOperation()
@@ -79,15 +84,15 @@ struct CalculatorBrain {
     
     private struct PendingBinaryOperation {
         let function: (Double, Double) -> Double
-        let stringFunction: (String, String) -> String // added
+        let stringFunction: (String, String) -> String
         let firstOperand: Double
-        let stringOperand: String // added
+        let stringOperand: String
         
         func perform(with secondOperand: Double) -> Double {
             return function(firstOperand, secondOperand)
         }
         
-        func performDescription(with secondOperand: String) -> String  { // added
+        func performDescription(with secondOperand: String) -> String  {
             return stringFunction(stringOperand, secondOperand)
         }
     }
@@ -97,17 +102,49 @@ struct CalculatorBrain {
         representation = "\(operand)"
     }
     
-    var resultIsPending: Bool {
-        return pendingBinaryOperation != nil
+    mutating func setOperand(variable name: String) {
+        stack?.append(Element.name(name))
     }
     
-    var description: String? { // CHANGING TO OPTIONAL
-        return resultIsPending ? pendingBinaryOperation?.performDescription(with: representation!) : representation ?? " "
+    func evaluate(using variables: Dictionary<String, Double>? = nil) -> (result: Double?, isPending: Bool, description: String) {
+        
+        var resultIsPending: Bool {
+            return pendingBinaryOperation != nil
+        }
+        
+        var description: String? {
+            return resultIsPending ? pendingBinaryOperation?.performDescription(with: representation!) : representation ?? ""
+        }
+        
+        var result: Double? {
+            return accumulator
+        }
+        
+        return (result: result ?? 0, isPending: resultIsPending, description: description!)
+    }
+    
+    mutating func clearState() {
+        pendingBinaryOperation = nil
+        accumulator = nil
+        representation = ""
+    }
+    
+    var resultIsPending: Bool {
+        return evaluate().isPending
+    }
+    
+    var description: String? {
+        return evaluate().description
     }
     
     var result: Double? {
-        return accumulator
+        return evaluate().result
     }
+    
+//    @available (*, unavailable, message: "Evaluate method overrides accumalator's purpose")
+    private var accumulator: Double?
+//    @available (*, unavailable, message: "Evaluate method overrides representation's purpose")
+    private var representation: String?
     
 }
 
