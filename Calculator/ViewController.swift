@@ -91,35 +91,39 @@ class ViewController: UIViewController {
         userIsInTheMiddleOfTyping = false
     }
     
-    // Auto Layout Lecture
-    private func showSizeClasses() {
-        if !userIsInTheMiddleOfTyping {
-            display.textAlignment = .center
-            display.text = "width " + traitCollection.horizontalSizeClass.description + " height " + traitCollection.verticalSizeClass.description
-        }
-    }
     
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        showSizeClasses()
-    }
     
-    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-        super.viewWillTransition(to: size, with: coordinator)
-        coordinator.animate(alongsideTransition: { coordinate in
-            self.showSizeClasses()
-        }, completion: nil)
-    }
+    
+////////////// Auto Layout Lecture /////////////////////
+//    private func showSizeClasses() {
+//        if !userIsInTheMiddleOfTyping {
+//            display.textAlignment = .center
+//            display.text = "width " + traitCollection.horizontalSizeClass.description + " height " + traitCollection.verticalSizeClass.description
+//        }
+//    }
+//
+//    override func viewDidAppear(_ animated: Bool) {
+//        super.viewDidAppear(animated)
+//        showSizeClasses()
+//    }
+//
+//    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+//        super.viewWillTransition(to: size, with: coordinator)
+//        coordinator.animate(alongsideTransition: { coordinate in
+//            self.showSizeClasses()
+//        }, completion: nil)
+//    }
     
 }
 
-// Auto Layout Lecture
-extension UIUserInterfaceSizeClass: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .compact: return "Compact"
-        case .regular: return "Regular"
-        case .unspecified: return "??"
-        }
-    }
-}
+//////////// Auto Layout Lecture //////////////
+//extension UIUserInterfaceSizeClass: CustomStringConvertible {
+//    public var description: String {
+//        switch self {
+//        case .compact: return "Compact"
+//        case .regular: return "Regular"
+//        case .unspecified: return "??"
+//        }
+//    }
+//}
+
