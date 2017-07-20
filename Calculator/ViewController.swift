@@ -14,40 +14,51 @@ class ViewController: UIViewController {
     @IBOutlet weak var history: UILabel!
     @IBOutlet weak var memory: UILabel!
     
-    var userIsInTheMiddleOfTyping = false
+    private var userIsInTheMiddleOfTyping = false
+    
+    private var variables = Dictionary<String,Double>() {
+        didSet {
+            memory.text = variables.flatMap{$0+":\($1)"}.joined(separator: ",")
+        }
+    }
     
     @IBAction func touchDigit(_ sender: UIButton) {
         let digit = sender.currentTitle!
-        let currentHistory = history.text!
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display.text!
-            display!.text = textCurrentlyInDisplay + digit
-            if textCurrentlyInDisplay.contains(".") && digit == "." {
-                display!.text = textCurrentlyInDisplay
-                history!.text = currentHistory
-            } else if !currentHistory.contains("=") && !currentHistory.contains("...") {
-                history!.text = currentHistory + digit
+            display.text = textCurrentlyInDisplay + digit
+            if !textCurrentlyInDisplay.contains(".") || "." != digit {
+                display.text = textCurrentlyInDisplay + digit
             }
         } else {
-            display!.text = digit == "." ? "0." : digit
-            if !currentHistory.contains("=") && !currentHistory.contains("...") {
-                history!.text = currentHistory + " " + display.text!
-            }
+            display!.text = "." == digit ? "0." : digit
             userIsInTheMiddleOfTyping = true
         }
     }
     
     var displayValue: Double {
         get {
-            return Double(display.text!)! // crashes here often when I use clear, and type in digits/operands
+            return Double(display.text!)!
         }
         set {
             display.text = String(newValue)
-            history.text = brain.evaluate().isPending ? brain.evaluate().description + " ..." : brain.evaluate().description + " ="
         }
     }
     
     private var brain = CalculatorBrain()
+    
+    private func evaluateExpression() {
+        let evaluation = brain.evaluate(using: variables)
+        if let result = evaluation.result {
+            displayValue = result
+        }
+        
+        if "" != evaluation.description {
+            history.text = evaluation.description + (evaluation.isPending ? "..." : " =")
+        } else {
+            history.text = " "
+        }
+    }
     
     @IBAction func performOperation(_ sender: UIButton) {
         if userIsInTheMiddleOfTyping {
@@ -56,44 +67,45 @@ class ViewController: UIViewController {
         }
         if let mathSymbol = sender.currentTitle {
             brain.performOperation(mathSymbol)
-            let currentHistory = history.text!
-            if brain.evaluate().isPending && !currentHistory.contains("=") && !currentHistory.contains("...") {
-                history.text = currentHistory + " " + mathSymbol + " ..."
-            }
         }
-        if let result = brain.evaluate().result {
-            displayValue = result
-        }
-    }
-    // most likely got to work on task 3 and 4 to fix this better and make it accept the variables properly
-    @IBAction func storeMemory(_ sender: UIButton) {
-        brain.setOperand(variable: "M")
-        let currentHistory = history.text!
-        memory.text = "M : \(brain.evaluate().result ?? 0)"
-        if let memorySymbol = sender.currentTitle {
-            if brain.resultIsPending && !currentHistory.contains("=") {
-                history.text = currentHistory + " " + memorySymbol + " ..."
-            }
-        }
+        evaluateExpression()
     }
     
-    @IBAction func callsToMemory(_ sender: UIButton) {
-        // evaluate in your Model with a Dictionary which has a single entry whose key is M and whose value is the current value of
-        // the display, and then updates the display to show the result that comes back from evaluate
+    @IBAction func storeToMemory(_ sender: UIButton) {
+        variables["M"] = displayValue
+        userIsInTheMiddleOfTyping = false
+        evaluateExpression()
+    }
+    
+    
+    @IBAction func onMemory(_ sender: UIButton) {
+        brain.setOperand(variable: "M")
+        userIsInTheMiddleOfTyping = false
+        evaluateExpression()
     }
     
     @IBAction func clearButton(_ sender: UIButton) { // buggy
         brain = CalculatorBrain()
-        brain.clearState()
-        display.text = " "
+        displayValue = 0
         history.text = " "
-        memory.text = "M : 0"
         userIsInTheMiddleOfTyping = false
+        variables = Dictionary<String,Double>()
     }
     
-    
-    
-    
+    @IBAction func undo(_ sender: UIButton) {
+        if userIsInTheMiddleOfTyping, var text = display.text {
+            text.remove(at: text.index(before: text.endIndex))
+            if text.isEmpty {
+                text = "0"
+                userIsInTheMiddleOfTyping = false
+            }
+            display.text = text
+        } else {
+            brain.undo()
+            evaluateExpression()
+        }
+    }
+}
 ////////////// Auto Layout Lecture /////////////////////
 //    private func showSizeClasses() {
 //        if !userIsInTheMiddleOfTyping {
@@ -113,8 +125,6 @@ class ViewController: UIViewController {
 //            self.showSizeClasses()
 //        }, completion: nil)
 //    }
-    
-}
 
 //////////// Auto Layout Lecture //////////////
 //extension UIUserInterfaceSizeClass: CustomStringConvertible {
